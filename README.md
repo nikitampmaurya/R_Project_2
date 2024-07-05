@@ -18,7 +18,7 @@ Identifying these deregulated genes helps in understanding the molecular mechani
 
 # What is Differential Expression Analysis:
 
-Differential expression (DE) analysis involves comparing gene expression levels between different conditions (e.g., disease vs. control) to identify genes that show statistically significant differences.
+Differential expression (DE) analysis involves comparing gene expression levels between different conditions to identify genes that show statistically significant differences.
 This analysis helps pinpoint specific genes that may contribute to or be affected by the disease.
 
 # What is the purpose of using EdgeR for DE Analysis:
