@@ -13,7 +13,7 @@ Each sample's classification into one of the three categories:
 
 # What is primary Objective?
 
-The main objective is to find genes whose expression levels are significantly different between Psoriatic Arthritis (PsA) patients and healthy controls (or between affected and unaffected tissues in PsA patients).
+The main objective is to find genes whose expression levels are significantly different between Psoriatic Arthritis (PsA) patients and healthy controls (i.e. between affected and unaffected tissues in PsA patients).
 Identifying these deregulated genes helps in understanding the molecular mechanisms underlying PsA, which can lead to the discovery of potential biomarkers for diagnosis and therapeutic targets.
 
 # What is Differential Expression Analysis:
