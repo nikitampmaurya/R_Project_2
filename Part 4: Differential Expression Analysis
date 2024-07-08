@@ -68,5 +68,4 @@ top2 = lrt$table[c(lrt$table$fdr <= 0.05 & abs(lrt$table$logFC)>=0.58),]
 write.xlsx(top, file = "DE_Results_GSE205748_FDR_0_01_logFC1.xlsx", rowNames=TRUE, colNames=TRUE)
 write.xlsx(top2, file = "DE_Results_GSE205748_FDR_0_05_logFC0_58.xlsx", rowNames=TRUE, colNames=TRUE)
 
-#save workspace
-save.image("GSE205748_DE_results.RData")
+
