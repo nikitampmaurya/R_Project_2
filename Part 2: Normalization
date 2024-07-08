@@ -1,0 +1,140 @@
+###################################### Part 2 ############################################################
+
+#For building model matrix, first we need to normalize the counts based on tissue type
+
+#before normalize,we must group the data based on experimental conditions to build matrix for the differential expression analysis.
+
+class(data2$Tissue_type) #since this a character vector,but we want factor
+
+group1 <- as.factor(data2$Tissue_type)
+group1 #the group1 factor with each sample's classification into one of the three categories (Healthy, PsA_les [Psoriatic Arthritis Lesional], PsA_uninv [Psoriatic Arthritis Uninvolved - areas that are not affected by Psoriatic Arthritis])
+
+#creating model matrix for the differential expression analysis.
+
+design = model.matrix(~group1+0) #design model matrix based on the group1 factor.
+design #Each group gets its own column with no intercept, so each sample gets a checkmark in exactly one column.
+
+d = DGEList(counts=data1, group=group1)
+d #it is a special object that contains information your gene expression data and the groups you are comparing.
+
+dim(d)
+
+#calculate scaling factors for each sample to bring the library sizes to a common scale by using TMM (Trimmed Mean of M-values)
+
+d <- calcNormFactors(d) #normalizes to adjust the differences in sequencing depth and RNA composition between samples.
+
+head(d)
+tail(d) 
+
+norm_d = cpm(d) #get normalizied counts
+
+head(norm_d)
+
+#formula for cpm = (raw count/ (library Size x Ni)) x (10^6)
+
+#what is read count? and its significance?
+#Read counts is number of times a particular RNA sequence is observed in a sequencing experiment.
+#Higher read counts generally indicate higher expression levels of that gene in the sample.
+
+#why normalize read count?
+#Longer genes have high read count since they are large in size not necessarily because they are more active.
+#All the read count of that one large gene accounts for only one gene. 
+#Hence 10 read counts of one gene should to be consider as 1 and not 10. This one read count of gene should be compared with other genes read count.
+
+#Example: 
+#If you compare novel [large genes] with short poem book [short genes] and both are popular [highly expressed], you might see more pages [say 500 pages] from the novel being read simply because it has more pages, not because it's more popular [highly expressed].
+#and 50 pages from short poem book. At first glance, it looks like the 500 page novel is much more popular. However, this might just be because it has more pages, not because more people are reading it.
+
+#let's visualizing the normalized counts with boxplots
+
+boxplot(cpm(d), las=2) #cpm(d) function transforms the raw counts in the d object into counts per million
+#the las=2 parameter rotates the axis labels to be perpendicular to the axis for better readability.
+
+boxplot(cpm(d, log=TRUE), las=2) #transforms the raw counts into log-transformed counts per million. 
+#Log transformation helps in reducing the skewness of the data and makes it easier to compare low and high expression values.
+
+#Example: If one gene has a CPM of 100 and another has a CPM of 10, the log-transformed values might be:
+
+#Gene 1: Log(100) = 2
+#Gene 2: Log(10) = 1
+#This shows a clearer difference (Gene 1 is more active) compared to the raw CPM values.
+
+# Assuming 'd' is already defined as a DGEList object and normalized
+# Recreate the boxplot with plotly
+
+# greater variability in gene expression for that particular sample
+#most genes wihtin each sample are expressed very low
+
+
+#keep genes that have more than one count per million (cpm) in least 5% of samples
+
+keep = rowSums(cpm(d) > 1) >= ceiling(0.05*dim(d)[2]) 
+
+#here dim of d is 58302 genes (row) and 27 samples (columns)
+#cpm normalized our count as per calculated normalized factors
+#here cpm(d) >1 check if the gene expression is above 1, then calculate how all many samples have more than one count per million
+#when you run keep = rowsSums(cpm(d) > 1), you are checking how many samples (columns) for that particular gene (single row) hold value more than 1.
+
+head(keep)
+
+d1 = d[keep, ] 
+
+dim(d1)[1] #how many genes remained
+
+(dim(d1)[1]/dim(d)[1])*100 #we kept only 32% of gene
+
+d2 = DGEList(counts=d1, group=group1) #again calculating normalize factors
+
+d2
+
+d2 <- calcNormFactors(d2) #now normalizing based on normalize factors 
+
+norm_d2 = cpm(d2)
+
+head(norm_d2) #get normalized counts
+
+logCPM = cpm(d2, log=TRUE)
+
+logCPM #count transformed into log values.
+
+# Exporting normalized values
+write.table(norm_d2, file = "GSE205748_cpm.txt", sep = '\t')
+
+# Exporting log-transformed CPM values
+write.table(logCPM, file = "GSE205748_logcpm.txt", sep = '\t')
+
+########Saving boxplot now #########
+
+dir.create("Plots") #create dir called plot
+
+pdf(file = "Plots/GSE205748_boxplots.pdf", width = 16, height = 8) #create empty file in plots directory
+
+par(mfrow=c(1,2)) #converting graphics window to 2 columns
+
+boxplot(norm_d2, las=2) #to check distribution of counts of genes within each samples 
+
+boxplot(logCPM, las=2) #to check distribution of counts of genes within each samples with log values 
+
+dev.off() #close graphics device to save pdf
+
+par(mfrow=c(1,1)) #converting graphics window back to 1 column
+
+
+data4 = read.table(file = 'GSE205748_cpm.txt', 
+                   header = TRUE,
+                   row.names = 1) #reading values of left plot
+
+data5 = read.table(file = 'GSE205748_logcpm.txt',
+                   header = TRUE, 
+                   row.names = 1) #reading values of right plot
+
+
+#interpretation
+
+#A taller box indicates greater variability in gene expression within that sample.
+#A shorter box suggests more consistent expression levels.
+#on x-axis each box represents one of the 27 samples
+#on y-axis each box represents shows the normalized count values.
+
+#According to the graphs, healthy and Psoriatic Arthritis Uninvolved have similar gene expression and 
+#show significantly lower gene expression variability compared to Psoriatic Arthritis patient. 
