@@ -1,0 +1,70 @@
+#Aim: To identify deregulated genes in Psoriatic Arthritis patients by performing differential expression analysis.
+
+#What is Psoriatic Arthritis?
+#It's an autoimmune disease that combines the symptoms of arthritis and psoriasis.
+#psoriasis, a condition that causes red, scaly patches on the skin. These patches can be itchy and painful.
+
+#what is differential expression (DE) analysis?
+#we do DE analysis to study differences in expression levels between different experimental conditions or groups.
+
+
+########################################## Part 1 -  Data preprocessing #######################################
+
+getwd() #to current directory 
+
+setwd("C:/Users/Nikita Maurya/OneDrive/Desktop/Nikita/Rfiles") #to set directory
+
+#If BiocManager is installed and successfully loaded, require returns TRUE i.e. if !true meaning if false meaning, since the condition is false, the code block inside the if statement will not be executed.
+#If BiocManager is not installed or fails to load, require returns FALSE. i.e. if !false meaning if true, since the condition is TRUE, the code block inside the if statement will be executed.
+
+
+#if (!require("BiocManager", quietly = TRUE)) 
+  #install.packages("BiocManager")
+#BiocManager::install("edgeR")
+#BiocManager::install('biomaRt')
+#BiocManager::install("ComplexHeatmap")
+#install.packages('circlize')
+#install.packages('openxlsx')
+#install.packages('ggplot2')
+#install.packages('dplyr')
+#install.packages('FactoMineR')
+#install.packages('plotly')
+
+library(edgeR) #to preprocess, normalize, dispersion estimation, and other testing for differential expression.
+library(openxlsx) #useful for importing or exporting data to/from Excel files, especially for saving results or loading metadata.
+library(ggplot2) #to create graphs
+library(dplyr) #to manipulate dataframe
+library(FactoMineR) # Provides functions for performing principal component analysis (PCA)
+library(circlize) #for visualizing genomic data, such as heatmaps or circos plots of differential expression
+library(ComplexHeatmap) #provides tools for creating complex heatmaps.
+library(plotly) #to create interactive graphs
+library(biomaRt) # Essential for obtaining gene annotations, mapping gene IDs, or retrieving other genomic information needed for interpretation.
+
+data0 = read.table(file = 'GSE205748_read_counts_PsA.csv', 
+                    header = TRUE,
+                    row.names = 1) #Read count from RNA sequencing data of normal and Psoriatic Arthritis tissue samples.
+
+#dim(data0) #total 58,302 genes (rows) and 27 samples (columns)
+
+data2 = read.table('GSE205748_series_matrix_edit.txt',
+                    header = TRUE) #this metadata containing other information such as types of samples, geo accession etc
+
+#dim(data2) #27 samples and 4 columns describing its characteristics
+
+identical(colnames(data0), data2[, 2]) #to check if column names of the dataframe data0 and second column of dataframe data2 match
+
+colnames(data0) #to compare the difference 
+
+data2[,2] #to compare the difference
+
+#since there exist difference 
+
+data1 = data0[,data2$Sample_code] #we rearrange the column name of the dataframe "data0" according to second column of dataframe "data2"
+
+identical(colnames(data1), data2[, 2]) #to check again if the above two columns of different dataframes match after arranging
+
+rm(data0) #discarding old dataframe after arranging
+
+table(is.na(data1)) #thera are 58302 genes * 27 samples = 1574154 entries
+
+#since there are no missing values and we matched the columns of the expression data and metadata, we move forward to normalization.
