@@ -1,0 +1,38 @@
+####################part 5: Annotation result###############
+
+#choosing biomart version
+
+mart = useEnsembl(biomart = 'ensembl', 
+                   dataset = 'hsapiens_gene_ensembl', 
+                   version = 105) 
+
+#useEnsembl allows you to connect to the Ensembl BioMart database. 
+#here you can specify which BioMart database and dataset you want to use.
+
+#searching for annotation based on ensembl_gene_id identifiers
+annot = getBM(filters= "ensembl_gene_id", #which identifier you are using
+               attributes= c("ensembl_gene_id", 
+                             "description", 
+                             "start_position", 
+                             "end_position", 
+                             "strand", 
+                             "hgnc_symbol"), #which attributes you want to collect
+               values=rownames(lrt$table), #the names of your genes
+               mart= mart) #the mart you defined previously
+
+#getBM(get BioMart) allows you to retrieve specific data based on your query.
+#filters are used to find genes based on their Ensembl gene IDs.
+#values means we are requesting data for the genes listed in the differential expression table lrt$table.
+
+#add ensenmle_gene_id to lrt$table and add rownames to that new column
+lrt$table$ensembl_gene_id = rownames(lrt$table)
+
+
+Final_version = left_join(lrt$table, annot, by = 'ensembl_gene_id')
+
+head(Final_version[c(1,5)])
+
+dim(Final_version) #has more two genes because same genes has different annotation.
+dim(lrt$table) 
+
+write.xlsx(Final_version, file="GSE205748_DE_results_PsA_les_vs_healthy.xlsx", colNames=TRUE, rowNames=TRUE)
