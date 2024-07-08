@@ -1,0 +1,71 @@
+####################### Part 3: Generating PCA ############################################
+
+#what is PCA?
+#Principal complement analysis is plot that clusters points that are highly correlated.
+#PC1 weighs more than PC2.
+
+#logCPM has normalized values in log form 
+
+t_logcpm = t(logCPM) #to transpose the table for performing PCA
+
+#View(t_logcpm)
+
+pcacpm = PCA(t_logcpm,
+              scale.unit = T,
+              graph = F) #performing the PCA  
+
+#Setting scale.unit = TRUE ensures that each gene contributes equally to the principal components, regardless of its variance.
+
+data_pca <- as.data.frame(pcacpm$ind$coord) #to isolate pca co-oridinates of each sample from index 
+
+pca_perc = pcacpm$eig[,2] #choosing the second column 
+
+View(pca_perc)
+
+g = ggplot(data_pca,
+       aes(data_pca[,1], data_pca[,2],
+           color = data2$Tissue_type)) +
+  geom_point() +
+  labs(title = 'PCA - GSE205748',
+       x = paste0("PC1(", round(pca_perc[1],2),")"),
+       y = paste0("PC2(", round(pca_perc[2],2),")"),
+       color = 'Tissue Type') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(g)
+
+#to export to pdf
+#to open the file
+pdf(file = 'Plots/PCA_GSE205748.pdf', width = 8, height = 6)
+#print the plot
+print(g)
+#to close the file
+dev.off()
+
+################ same plot in plotly ##########
+
+library(ggplot2)
+library(plotly)
+
+g <- ggplot(data_pca, aes(x = data_pca[,1], y = data_pca[,2], color = data2$Tissue_type)) +
+  geom_point() +
+  labs(title = 'PCA - GSE205748',
+       x = paste0("PC1 (", round(pca_perc[1], 2), ")"),
+       y = paste0("PC2 (", round(pca_perc[2], 2), ")"),
+       color = 'Tissue Type') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(g)
+
+g_plotly <- ggplotly(g)
+print(g_plotly)
+
+
+#intrepretating PCA graph
+#PCA plot transforms correlation among all the cells in 2-D graphs.
+
+#According to graph, samples of healthy tissue and PsA_univolved show high correlation regarding their gene expression
+#while PsA_les tissue samples are very different from the rest of the tissue samples. 
+#since they are far apart on x axis.
