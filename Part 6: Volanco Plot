@@ -1,0 +1,72 @@
+############## Part 6: Let's Visualize##################################
+
+###Volcano plot
+
+ggplot(data=Final_version, 
+       aes(x=logFC, y=-log10(fdr))) + 
+  geom_point() + 
+  geom_vline(xintercept=c(-1, 1), col="red") +
+  geom_hline(yintercept=-log10(0.01), col="red") + 
+  theme_minimal()
+
+#how to interpret the volanco plot x axis?
+#x-axis represents log fold change (logFC) in gene expression between two conditions.
+#Positive values indicate upregulation.
+#Negative values indicate downregulation.
+
+#y axis:
+#y-axis represents the negative logarithm (base 10) of the false discovery rate (FDR) p-value.
+#transformation is used to make it easier to visualize small p-values (0.01, 0.001, and 0.0001)
+#Higher values on the y-axis indicate more significant differential expression.
+#For example, an FDR of 0.01 would be plotted at a y-value of -log10(0.01) = 2.
+
+
+#vertical redlines
+#log fold change of -1 or 1 typically corresponds to a 2-fold decrease or increase in expression.
+
+#horizontal redlines
+#-log10(0.01) equals 2, meaning the line is drawn at y = 2.
+#genes that are above the horizontal line y=2 are considered to have a statistically significant difference in expression between the compared conditions.
+
+
+#let's add column describing significance level of our genes according to their significance level
+
+DE_res = Final_version
+
+DE_res = DE_res %>%
+  mutate(significance = case_when(
+    logFC >=1 & fdr <= 0.01 ~ 'Upregulated',
+    logFC <=-1 & fdr <= 0.01 ~ 'Downregulated',
+    abs(logFC) < 1 | fdr > 0.01 ~ 'Not significant'
+  ))
+
+##plotting with color
+
+#opening file
+pdf("Plots/VolcanoPlot_GSE205748.pdf", height = 8, width = 8)
+
+#preparing the plot
+g = ggplot(DE_res,
+            aes(x = logFC,
+                y = -log10(fdr),
+                color = significance,
+                label = hgnc_symbol) 
+) + 
+  geom_point() + 
+  geom_vline(xintercept = c(-1,1), color = 'red') + 
+  geom_hline(yintercept = -log10(0.01), color = 'red') + 
+  labs(x = 'LogFC', y = '-Log10(FDR)',color = 'Significance') + 
+  scale_color_manual(values = c('blue','grey90','red'))+
+  theme_minimal() 
+
+#note: HUGO Gene Nomenclature Committee (HGNC), responsible for assigning unique and universally accepted names and symbols to human genes.
+
+print(g)
+
+#closing the file
+dev.off()
+
+library(plotly)
+print(g) #same plot in plotly
+ggplotly()
+
