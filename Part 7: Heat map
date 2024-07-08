@@ -1,0 +1,67 @@
+#################part 7: heatmap ################################
+
+#selecting the top 50 upregulated genes
+Up50 <- DE_res %>%
+  slice_max(order_by = logFC, n =50)
+
+#selecting the top 50 downregulated genes
+Down50 <- DE_res %>%
+  slice_min(order_by = logFC, n =50)
+
+#binding both dataframes
+Top100 <- bind_rows(Up50, Down50)
+
+#Isolate the expression of top 100
+logCPM_100 <- logCPM[Top100$ensembl_gene_id,] 
+
+#saving heatmap to a file
+pdf('Plots/GSE205748_heatmap_top100_DE.pdf', width = 8, height =8)
+
+#now creating the heatmap
+Heatmap(logCPM_100,
+        row_labels = Top100$hgnc_symbol, 
+        row_names_gp = gpar(fontsize = 5), 
+        column_names_gp = gpar(fontsize = 7), 
+        heatmap_legend_param = list(title = "LogCPM\nexpression"), 
+        top_annotation = HeatmapAnnotation(Condition = data2$Tissue_type, 
+                                           which = 'column', 
+                                           col = list(Condition = c(PsA_les = 'turquoise4',
+                                                                    PsA_uninv = 'red3',
+                                                                    Healthy = 'green2')
+                                           )
+        )
+)
+
+
+#close the file
+dev.off()
+
+##save final workspace
+date <- Sys.Date()
+save.image(file = paste0(date,"_GSE205748_DE_analysis_complete.RData"))
+
+#save session info to a text file for reproducibility purposes
+sink(file = 'session_info_GSE205748_DE_analysis_complete.txt')
+sessionInfo()
+sink()
+
+
+logCPM_100_df = as.data.frame(logCPM_100)
+logCPM_100_df$Gene = Top100$hgnc_symbol
+logCPM_100_long = pivot_longer(logCPM_100_df, cols = -Gene, names_to = "Sample", values_to = "Expression")
+
+p = ggplot(logCPM_100_long, aes(x = Sample, y = Gene, fill = Expression)) + 
+  geom_tile() +
+  labs(title = "Heatmap of Top 100 Differentially Expressed Genes",
+       x = "Samples",
+       y = "Genes",
+       fill = "LogCPM Expression") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 5,angle = 90),
+        axis.text.y = element_text(size = 5))
+
+# Convert to plotly
+plotly_heatmap = ggplotly(p)
+
+# Display the plot
+plotly_heatmap
