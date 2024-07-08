@@ -1,0 +1,72 @@
+################# Part 4: Let's begin with Differential expression analysis############
+
+####Submodule 1 - Dispersion and model fit####
+
+# to estimate the dispersion of each gene
+d3 = estimateDisp(d2, design, verbose=TRUE)
+
+#Dispersion is a measure of the variability in gene expression levels across different samples.
+#d3 contains count data, normalization factors, gene IDs etc. since it already undergone normalization (using calcNormFactors).
+#the design matrix will specify which samples belong to which condition.
+#verbose true ensures that the function prints detailed information about the dispersion estimation process to the console. 
+
+#estimateDisp estimates the biological variability in gene expression across different samples. 
+#This variability can arise due to inherent biological differences, technical variations, or experimental noise.
+#works by calculating variance.
+
+#Fit your model
+fit = glmQLFit(d3, design)
+#fits a statistical model (quasi-likelihood negative binomial generalized log-linear model) to the data (read counts for each gene).
+#which allows you to compare the gene expression levels between different conditions.
+
+####Submodule 2 - Contrast define and DEA####
+
+head(design,3) #to check design matrix categories
+
+#to create contrast parameter.
+#PsA Lesional vs Healthy would be PsA_les - Healthy, therefore based on the column order of the design matrix:
+contr = c(-1,1,0) # this corresponds to group1Healthy*-1 + group1PsA_les*1 + group1PsA_uninv*0, therefore PsA_les - Healthy
+
+#we can also make the contrast parameter using makeContrasts if that is convenient.
+#contr2 = makeContrasts(group1PsA_les-group1Healthy, levels = design) 
+
+lrt = glmQLFTest(fit, contrast = contr) #running Differential Expression test
+
+#str(lrt) either type this or click lrt in the global environment.
+
+head(lrt$table) #to visualize only table
+#logFC(log Fold Change) It indicates the magnitude of change in expression between the two conditions being compared. 
+#minus value means the gene is downregulated in the condition of interest compared to the control, 
+#and a pluss value means it is upregulated.
+
+#logCPM(log Counts Per Million) - expression level of the gene across all samples, expressed as log2 of the counts per million reads.
+#The larger the F value, the more evidence against the null hypothesis (no differential expression).
+
+
+#After performing differential expression analysis, we often test thousands of genes, 
+#so you need to correct for multiple comparisons to control the false discovery rate (FDR).
+#This is done using the Benjamini-Hochberg (BH) procedure.
+lrt$table$fdr = p.adjust(lrt$table$PValue, method="BH")
+
+##Results Filtering
+
+#An FDR threshold of 0.01 is very strict and means that we are accepting only a 1% chance of false positives among the significant results.
+#A logFC of 1 indicates a two-fold change in expression, either up or down (since it is in logarithmic scale, 2^1 = 2).
+
+#Setting a higher threshold (|logFC| >= 1) is stricter and captures genes with more substantial changes in expression.
+
+#filtering for fdr <= 0.01 (strict) and absolute logFC >=1 (strict)
+top = lrt$table[c(lrt$table$fdr <= 0.01 & abs(lrt$table$logFC)>=1),]
+
+#An FDR threshold of 0.05 is less strict, allowing for a 5% chance of false positives.
+##A logFC of 0.58 corresponds to approximately a 1.5-fold change (2^0.58 ≈ 1.5).
+#A lower threshold (|logFC| >= 0.58) is less strict and captures genes with more modest changes in expression.
+#filtering for fdr <= 0.05 (normal) and absolute logFC >=0.58 (normal)
+top2 = lrt$table[c(lrt$table$fdr <= 0.05 & abs(lrt$table$logFC)>=0.58),]
+
+#export results
+write.xlsx(top, file = "DE_Results_GSE205748_FDR_0_01_logFC1.xlsx", rowNames=TRUE, colNames=TRUE)
+write.xlsx(top2, file = "DE_Results_GSE205748_FDR_0_05_logFC0_58.xlsx", rowNames=TRUE, colNames=TRUE)
+
+#save workspace
+save.image("GSE205748_DE_results.RData")
